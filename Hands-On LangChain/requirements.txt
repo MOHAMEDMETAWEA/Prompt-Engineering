@@ -9,4 +9,4 @@ pypdf
 chromadb
 tiktoken
 sentence-transformers
-kagglehub
+
