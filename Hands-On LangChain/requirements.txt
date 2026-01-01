@@ -1,0 +1,12 @@
+langchain
+langchain-community
+langchain-core
+langchain-openai
+langchain-huggingface
+openai
+python-dotenv
+pypdf
+chromadb
+tiktoken
+sentence-transformers
+kagglehub
