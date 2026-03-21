@@ -1,3 +1,21 @@
+"""Utilities for LLM-powered customer service demos and notebooks.
+
+Purpose:
+- Provide helper functions to call chat completions, parse model outputs,
+- Load and manage example product and category datasets,
+- Offer convenience wrappers for extracting products/categories from free text.
+
+Main components:
+- OpenAI client initialization with optional OpenRouter moderation shim,
+- Data loaders/creators for products and categories JSON files,
+- Parsing utilities to robustly interpret LLM outputs,
+- Convenience functions to format results for display.
+
+Dependencies:
+- openai: Chat completions API client
+- python-dotenv: Load API keys and endpoints from .env
+- json, os, collections: Standard library utilities
+"""
 import json
 import os
 from openai import OpenAI
@@ -35,6 +53,17 @@ categories_file = 'categories.json'
 def get_completion_from_messages(messages, 
                                  model=openai_api_name, 
                                  temperature=0, max_tokens=500):
+    """Call chat completions with a messages list.
+
+    Parameters:
+    - messages: list[dict] with role/content pairs for the chat
+    - model: model identifier/name from .env (default: openai_api_name)
+    - temperature: sampling temperature controlling creativity
+    - max_tokens: maximum tokens in completion
+
+    Returns:
+    - str: assistant message content from the first choice
+    """
     response = client.chat.completions.create(
         model=model,
         messages=messages,
@@ -44,6 +73,11 @@ def get_completion_from_messages(messages,
     return response.choices[0].message.content
 
 def create_categories():
+    """Create default customer service categories and persist to JSON.
+
+    Returns:
+    - dict: mapping category -> list of subtopics
+    """
     categories_dict = {
       'Billing': [
                 'Unsubscribe or upgrade',
@@ -70,6 +104,11 @@ def create_categories():
     return categories_dict
 
 def get_categories():
+    """Load categories from JSON or create defaults when missing.
+
+    Returns:
+    - dict: categories structure
+    """
     if not os.path.exists(categories_file):
         return create_categories()
     with open(categories_file, 'r') as file:
@@ -77,10 +116,16 @@ def get_categories():
     return categories
 
 def get_product_list():
+    """Return a flat list of product names."""
     products = get_products()
     return list(products.keys())
 
 def get_products_and_category():
+    """Aggregate product names by category.
+
+    Returns:
+    - dict[str, list[str]]: category -> list of product names
+    """
     products = get_products()
     products_by_category = defaultdict(list)
     for product_name, product_info in products.items():
@@ -90,6 +135,11 @@ def get_products_and_category():
     return dict(products_by_category)
 
 def get_products():
+    """Load products from JSON or create defaults when missing.
+
+    Returns:
+    - dict[str, dict]: product name -> product info
+    """
     if not os.path.exists(products_file):
         return create_products()
     with open(products_file, 'r') as file:
@@ -97,6 +147,15 @@ def get_products():
     return products
 
 def find_category_and_product(user_input, products_and_category):
+    """Ask the LLM to extract categories and products from text.
+
+    Parameters:
+    - user_input: str free-text customer query
+    - products_and_category: dict allowed products grouped by category
+
+    Returns:
+    - str: model output (JSON-like) describing categories/products
+    """
     delimiter = "####"
     system_message = f"""
     You will be provided with customer service queries. The customer service query will be delimited with {delimiter} characters.
@@ -113,6 +172,15 @@ def find_category_and_product(user_input, products_and_category):
     return get_completion_from_messages(messages)
 
 def find_category_and_product_only(user_input, products_and_category):
+    """Variant that requests only the extracted list from the LLM.
+
+    Parameters:
+    - user_input: str free-text customer query
+    - products_and_category: dict allowed products grouped by category
+
+    Returns:
+    - str: minimal list of objects (as text) from the model
+    """
     delimiter = "####"
     system_message = f"""
     You will be provided with customer service queries. The query will be delimited with {delimiter}.
@@ -127,18 +195,29 @@ def find_category_and_product_only(user_input, products_and_category):
     return get_completion_from_messages(messages)
 
 def get_products_from_query(user_msg):
+    """Convenience wrapper returning extracted products/categories for a query."""
     products_and_category = get_products_and_category()
     return find_category_and_product(user_msg, products_and_category)
 
 def get_product_by_name(name):
+    """Lookup a product dict by its display name."""
     products = get_products()
     return products.get(name, None)
 
 def get_products_by_category(category):
+    """Return all product dicts belonging to a given category."""
     products = get_products()
     return [product for product in products.values() if product["category"] == category]
 
 def get_mentioned_product_info(data_list):
+    """Expand extracted items to full product dicts.
+
+    Parameters:
+    - data_list: list of dicts with keys 'products' or 'category'
+
+    Returns:
+    - list[dict]: product objects relevant to the query
+    """
     product_info_l = []
     if data_list is None: return product_info_l
     for data in data_list:
@@ -154,6 +233,17 @@ def get_mentioned_product_info(data_list):
     return product_info_l
 
 def read_string_to_list(input_string):
+    """Parse a model-produced string into a Python list.
+
+    Attempts to robustly clean common LLM formatting artifacts
+    like fenced code blocks and single quotes before json.loads.
+
+    Parameters:
+    - input_string: str representation of a list of dicts
+
+    Returns:
+    - list | None: parsed list or None on failure
+    """
     if not input_string: return None
     try:
         # Simple cleanup for common LLM output issues
@@ -167,6 +257,14 @@ def read_string_to_list(input_string):
         return None
 
 def generate_output_string(data_list):
+    """Format product information as pretty-printed JSON lines.
+
+    Parameters:
+    - data_list: list of dicts with 'products' or 'category'
+
+    Returns:
+    - str: newline-separated JSON snippets for display
+    """
     output_string = ""
     if data_list is None: return output_string
     for data in data_list:
@@ -182,6 +280,11 @@ def generate_output_string(data_list):
     return output_string
 
 def create_products():
+    """Create a minimal set of demo products and persist to JSON.
+
+    Returns:
+    - dict[str, dict]: product name -> product info
+    """
     products = {
         "TechPro Ultrabook": {"name": "TechPro Ultrabook", "category": "Computers and Laptops", "brand": "TechPro", "price": 799.99, "description": "A sleek and lightweight ultrabook."},
         "BlueWave Gaming Laptop": {"name": "BlueWave Gaming Laptop", "category": "Computers and Laptops", "brand": "BlueWave", "price": 1199.99, "description": "High-performance gaming laptop."},
@@ -194,5 +297,7 @@ def create_products():
     return products
 
 if __name__ == "__main__":
+    # Example script usage: populate demo datasets if missing.
+    # TODO: Consider adding CLI flags to skip/force recreation.
     create_products()
     create_categories()
