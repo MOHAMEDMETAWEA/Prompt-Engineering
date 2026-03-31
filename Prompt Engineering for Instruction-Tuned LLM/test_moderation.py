@@ -1,3 +1,23 @@
+"""Moderation test script.
+
+Purpose:
+- Validate the OpenAI moderation endpoint and integration.
+- Report success or stack trace details.
+
+Main components:
+- env loading
+- client init
+- single moderation API call
+
+Dependencies:
+- openai
+- python-dotenv
+- traceback
+
+TODO:
+- Add parameterization to avoid hard-coded test text.
+"""
+
 from openai import OpenAI
 from dotenv import dotenv_values
 import traceback

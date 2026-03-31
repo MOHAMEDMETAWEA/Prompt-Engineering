@@ -1,6 +1,31 @@
+"""Restore notebook context script.
+
+Purpose:
+- Inject or validate conversation context in specific prompt-engineering notebooks.
+- Supports building chatbot and customer service routine flows.
+
+Main components:
+- restore_context_building_chatbot(path)
+- restore_context_customer_service(path)
+
+Dependencies:
+- nbformat
+
+TODO:
+- Add generic notebook auto-detection instead of hardcoded names.
+"""
+
 import nbformat
 
 def restore_context_building_chatbot(path):
+    """Ensure pizza-order bot context is present in the notebook.
+
+    Parameters:
+    - path: str path to the notebook file.
+
+    Returns:
+    - None. Writes the notebook if context is injected.
+    """
     print(f"Restoring context in {path}...")
     with open(path, 'r', encoding='utf-8') as f:
         nb = nbformat.read(f, as_version=4)
@@ -53,6 +78,14 @@ panels = [] # collect display"""
             nbformat.write(nb, f)
 
 def restore_context_customer_service(path):
+    """Validate or report missing service-assistant context in notebook.
+
+    Parameters:
+    - path: str path to the notebook file.
+
+    Returns:
+    - None. Prints status on context existence.
+    """
     print(f"Restoring context in {path}...")
     with open(path, 'r', encoding='utf-8') as f:
         nb = nbformat.read(f, as_version=4)

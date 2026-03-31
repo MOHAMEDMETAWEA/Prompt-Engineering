@@ -1,7 +1,32 @@
+"""Standardize all notebooks script.
+
+Purpose:
+- Normalize import and helper function cells across notebooks in this folder.
+- Replace scattered snippet definitions with unified import block.
+
+Main components:
+- fix_notebook(path): rewrite notebook code cells using standard template.
+
+Dependencies:
+- nbformat
+- os
+
+TODO:
+- Add backup saving before rewriting notebooks.
+"""
+
 import nbformat
 import os
 
 def fix_notebook(path):
+    """Standardize notebook structure to a known base template.
+
+    Parameters:
+    - path: str path to a .ipynb notebook file.
+
+    Returns:
+    - None. Notebook is rewritten in place when modifications apply.
+    """
     print(f"Processing {path}...")
     with open(path, 'r', encoding='utf-8') as f:
         nb = nbformat.read(f, as_version=4)
